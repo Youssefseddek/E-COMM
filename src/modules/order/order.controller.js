@@ -316,7 +316,7 @@ export const stripePay = async (req, res, next) => {
   }, { new: true });
 
   // send the session url to the client
-  res.status(200).json({ message: "Payment session created successfully", url: checkoutSession.url ,paymentIntent, data: checkoutSession });
+  res.status(200).json({ message: "Payment session created successfully", url: checkoutSession.url, paymentIntent, data: checkoutSession });
 
 }
 
@@ -333,34 +333,34 @@ export const webhook = async (req, res, next) => {
 
   const confirmPaymentIntent = await confirmStripePaymentIntent(confirmedOrder.payment_intent);
   console.log(confirmPaymentIntent);
-  
-  console.log("======================== webhook =======================",req.body.data.object.metadata);
+
+  console.log("======================== webhook =======================", req.body.data.object.metadata);
   res.status(200).json({ message: "Webhook received successfully" });
 
 }
 ///=====================================
 
 export const webhookHandler = async (request, response) => {
-   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-  
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
   let event = request.body;
   // Only verify the event if you have an endpoint secret defined.
   // Otherwise use the basic event deserialized with JSON.parse
   // if (endpointSecret) {
-    // Get the signature sent by Stripe
-    const signature = request.headers['stripe-signature'];
-    try {
-      event = stripe.webhooks.constructEvent(
-        request.body,
-        signature,
-        process.env.WEBHOOK_SECRET
-      );
-    } catch (err) {
-      console.log(`⚠️  Webhook signature verification failed.`, err.message);
-      return response.sendStatus(400);
-    }
+  // Get the signature sent by Stripe
+  const signature = request.headers['stripe-signature'];
+  try {
+    event = stripe.webhooks.constructEvent(
+      request.body,
+      signature,
+      process.env.WEBHOOK_SECRET
+    );
+  } catch (err) {
+    console.log(`⚠️  Webhook signature verification failed.`, err.message);
+    return response.sendStatus(400);
+  }
   // }
-  const {orderId} = event.data.object.metadata;
+  const { orderId } = event.data.object.metadata;
 
   // Handle the event
   if (event.type == 'checkout.session.completed') {
@@ -369,14 +369,16 @@ export const webhookHandler = async (request, response) => {
     });
     console.log(`✅  PaymentIntent for order ${orderId} was successful!`);
     response.status(200).json({ message: "PaymentIntent confirmed successfully" });
+  } else {
+    // ... handle other event types
+    await Order.findByIdAndUpdate(orderId, {
+      orderStatus: OrderStatus.Dropped,
+    });
+    response.status(400).json({ message: "please try to pay again" });
   }
 
-  // ... handle other event types
-  // await Order.findByIdAndUpdate(orderId, {
-  //   orderStatus: OrderStatus.Dropped,
-  // });
-  response.status(400).json({ message: "please try to pay again" });
- 
+
+
 };
 
 
@@ -404,8 +406,8 @@ export const refundOrder = async (req, res, next) => {
   // refund the payment intent
   const refund = await refundStripePaymentIntent(order.payment_intent);
   console.log({ refund });
-  
-  
+
+
   // update order status to refunded
   order.orderStatus = OrderStatus.Refunded;
   await Order.updateOne({ _id: orderId }, order);

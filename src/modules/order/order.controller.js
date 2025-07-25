@@ -81,7 +81,7 @@ export const createOrder = async (req, res, next) => {
   }
 
   let orderStatus = OrderStatus.Pending;
-  if (PaymentMethod === PaymentMethod.Cash) {
+  if (paymentMethod === PaymentMethod.Cash) {
     orderStatus = OrderStatus.Placed;
   }
 

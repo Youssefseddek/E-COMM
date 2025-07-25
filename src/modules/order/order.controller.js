@@ -372,9 +372,9 @@ export const webhookHandler = async (request, response) => {
   }
 
   // ... handle other event types
-  await Order.findByIdAndUpdate(orderId, {
-    orderStatus: OrderStatus.Dropped,
-  });
+  // await Order.findByIdAndUpdate(orderId, {
+  //   orderStatus: OrderStatus.Dropped,
+  // });
   response.status(400).json({ message: "please try to pay again" });
  
 };

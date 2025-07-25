@@ -4,6 +4,7 @@ import { ApiFeatures, ErrorClass, OrderStatus, PaymentMethod } from "../../utils
 import { calculateCartTotal } from "../cart/cart.utils.js";
 import { calculateProductPrice, validateCoupon } from "./order.utils.js";
 import { confirmStripePaymentIntent, createCheckoutSession, createStripeCoupon, createStripePaymentIntent, refundStripePaymentIntent } from "../../Payment-Handler/stripe.js";
+import Stripe from "stripe";
 
 /**
  * @api {POST} /orders/create create order
@@ -337,6 +338,47 @@ export const webhook = async (req, res, next) => {
   res.status(200).json({ message: "Webhook received successfully" });
 
 }
+///=====================================
+
+export const webhookHandler = async (request, response) => {
+   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  
+  let event = request.body;
+  // Only verify the event if you have an endpoint secret defined.
+  // Otherwise use the basic event deserialized with JSON.parse
+  // if (endpointSecret) {
+    // Get the signature sent by Stripe
+    const signature = request.headers['stripe-signature'];
+    try {
+      event = stripe.webhooks.constructEvent(
+        request.body,
+        signature,
+        process.env.WEBHOOK_SECRET
+      );
+    } catch (err) {
+      console.log(`⚠️  Webhook signature verification failed.`, err.message);
+      return response.sendStatus(400);
+    }
+  // }
+  const {orderId} = event.data.object.metadata;
+
+  // Handle the event
+  if (event.type == 'checkout.session.completed') {
+    await Order.findByIdAndUpdate(orderId, {
+      orderStatus: OrderStatus.Confirmed,
+    });
+    console.log(`✅  PaymentIntent for order ${orderId} was successful!`);
+    response.status(200).json({ message: "PaymentIntent confirmed successfully" });
+  }
+
+  // ... handle other event types
+  await Order.findByIdAndUpdate(orderId, {
+    orderStatus: OrderStatus.Dropped,
+  });
+  response.status(400).json({ message: "please try to pay again" });
+ 
+};
+
 
 
 // refund order

@@ -13,7 +13,14 @@ const app = express()
 const port = process.env.PORT || 3000
 
 
-app.use(express.json())
+// app.use(express.json())
+app.use((req, res, next )=>{
+    if(req.originalUrl == '/orders/webhook'){
+        next()
+    } else{
+        express.json()(req, res, next)
+    }
+})
 // app.use(express.urlencoded({ extended: true }));
 // Enable the extended query parser
 app.set('query parser', 'extended');

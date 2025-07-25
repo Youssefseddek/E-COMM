@@ -22,7 +22,13 @@ orderRouter.post('/stripePay/:orderId', auth(), errorHandler(controller.stripePa
 
 
 // webhook
-orderRouter.post('/webhook', errorHandler(controller.webhook))
+// orderRouter.post('/webhook', errorHandler(controller.webhook))
+orderRouter.post('/webhook',
+    express.raw({ type: 'application/json' }),
+    errorHandler(controller.webhookHandler))
+
+
+// app.post('/webhook', express.raw({type: 'application/json'}),
 
 // refund order
 orderRouter.put('/refund/:orderId', auth(), errorHandler(controller.refundOrder))

@@ -45,7 +45,6 @@ const orderSchema = new Schema({
     couponId: {
         type: Schema.Types.ObjectId,
         ref: 'Coupon',
-        required: true
 
     },
     shippingFee: {
